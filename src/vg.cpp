@@ -8,50 +8,57 @@
 
 inline constexpr uint32_t kWidth = 800, k_height = 600;
 inline constexpr const char* kAppName = "Von Engine";
+inline const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
+
+#ifdef NDEBUG
+const bool enableValidationLayers = false;
+#else
+const bool enableValidationLayers = true;
+#endif
 
 class TriangleApp {
  public:
   void run() {
-    init_window();
-    init_vulkan();
-    loop();
-    cleanup();
+    InitWindow();
+    InitVulkan();
+    Loop();
+    Cleanup();
   }
 
  private:
-  GLFWwindow* wnd = nullptr;
-  VkInstance instance = nullptr;
+  GLFWwindow* _wnd = nullptr;
+  VkInstance _instance = nullptr;
 
-  void init_window() {
+  void InitWindow() {
     if (!glfwInit()) {
       throw std::runtime_error("failed to initialize GLFW");
     }
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    wnd = glfwCreateWindow(kWidth, k_height, kAppName, nullptr, nullptr);
-    if (!wnd) {
+    _wnd = glfwCreateWindow(kWidth, k_height, kAppName, nullptr, nullptr);
+    if (!_wnd) {
       glfwTerminate();
       throw std::runtime_error("failed to create window");
     }
   }
 
-  void init_vulkan() {
-    create_instance();
+  void InitVulkan() {
+    CreateInstance();
   }
 
-  void loop() {
-    while (!glfwWindowShouldClose(wnd)) {
+  void Loop() {
+    while (!glfwWindowShouldClose(_wnd)) {
       glfwPollEvents();
     }
   }
 
-  void cleanup() {
-    vkDestroyInstance(instance, nullptr);
-    glfwDestroyWindow(wnd);
+  void Cleanup() {
+    vkDestroyInstance(_instance, nullptr);
+    glfwDestroyWindow(_wnd);
     glfwTerminate();
   }
 
-  void create_instance() {
+  void CreateInstance() {
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = kAppName;
@@ -76,7 +83,7 @@ class TriangleApp {
     createInfo.ppEnabledExtensionNames = glfwExtensions;
     createInfo.enabledLayerCount = 0;  // Not define right now ^^
 
-    if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+    if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
       throw std::runtime_error("failed to create instance!");
     }
 
@@ -93,7 +100,8 @@ class TriangleApp {
     }
   }
 
-  bool compare_extension(std::vector<VkExtensionProperties>& vkExtensions, char** glfwExtensions) {
+  bool CheckValidationLayerSupport() {
+    uint32_t layerCount;
     return false;
   }
 };
