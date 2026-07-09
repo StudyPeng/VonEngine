@@ -1,4 +1,5 @@
 ﻿#include <cstdint>
+#include <cstring>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <cstdlib>
@@ -8,7 +9,8 @@
 
 inline constexpr uint32_t kWidth = 800, k_height = 600;
 inline constexpr const char* kAppName = "Von Engine";
-inline const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
+inline constexpr const char* kEngineName = "Von";
+inline const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -59,6 +61,10 @@ class TriangleApp {
   }
 
   void CreateInstance() {
+    if (enableValidationLayers && CheckValidationLayerSupport()) {
+      throw std::runtime_error("validation layers requested, but not available!");
+    }
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = kAppName;
@@ -72,37 +78,58 @@ class TriangleApp {
     createInfo.pApplicationInfo = &appInfo;
 
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    for (uint32_t i = 0; i < glfwExtensionCount; ++i) {
-      std::cout << "(" << i + 1 << ") " << glfwExtensions[i] << "\n";
-    }
-
+    std::vector<const char*> glfwExtensions = GetRequiredExtensions();
     createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
-    createInfo.enabledLayerCount = 0;  // Not define right now ^^
+    createInfo.ppEnabledExtensionNames = glfwExtensions.data();
+    if (enableValidationLayers) {
+      createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+      createInfo.ppEnabledLayerNames = validationLayers.data();
+    } else {
+      createInfo.enabledLayerCount = 0;
+    }
 
     if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
       throw std::runtime_error("failed to create instance!");
     }
 
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-    int32_t loopCount = 0;
-    std::cout << "\n" << "available extensions:\n";
-    for (const auto& extension : extensions) {
-      ++loopCount;
-      std::cout << "(" << loopCount << ") " << extension.extensionName << "\n";
-    }
+    // uint32_t extensionCount = 0;
+    // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    // std::vector<VkExtensionProperties> extensions(extensionCount);
+    // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
   }
 
   bool CheckValidationLayerSupport() {
-    uint32_t layerCount;
+    uint32_t layerCount = 0;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    bool found = false;
+    for (const char* layerName : validationLayers) {
+      for (const auto& layerProperties : availableLayers) {
+        if (strcmp(layerName, layerProperties.layerName)) {
+          found = true;
+          break;
+        }
+      }
+    }
+
+    if (!found) {
+      return false;
+    }
+
     return false;
+  }
+
+  std::vector<const char*> GetRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    if (enableValidationLayers) {
+      extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+    return extensions;
   }
 };
 
