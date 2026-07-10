@@ -29,7 +29,8 @@ class TriangleApp {
 
  private:
   GLFWwindow* _wnd = nullptr;
-  VkInstance _instance = nullptr;
+  VkInstance _instance = VK_NULL_HANDLE;
+  VkDebugUtilsMessengerEXT _debugMessenger = VK_NULL_HANDLE;
 
   void InitWindow() {
     if (!glfwInit()) {
@@ -94,7 +95,7 @@ class TriangleApp {
 
     // uint32_t extensionCount = 0;
     // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    // std::vector<VkExtensionProperties> extensions(extensionCount);
+    // std::vector<VkExtengsionProperties> extensions(extensionCount);
     // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
   }
 
@@ -121,6 +122,20 @@ class TriangleApp {
     return false;
   }
 
+  void SetupMessenger() {
+    if (!enableValidationLayers) return;
+    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInfo.pfnUserCallback = DebugCallback;
+    createInfo.pUserData = VK_NULL_HANDLE;
+  }
+
   std::vector<const char*> GetRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
@@ -130,6 +145,14 @@ class TriangleApp {
       extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
     return extensions;
+  }
+
+  static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageServerity,
+                                                      VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                      const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                      void* pUserData) {
+    std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
+    return VK_FALSE;
   }
 };
 
