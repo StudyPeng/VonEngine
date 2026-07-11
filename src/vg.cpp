@@ -56,6 +56,9 @@ class TriangleApp {
   }
 
   void Cleanup() {
+    if (enableValidationLayers) {
+      DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
+    }
     vkDestroyInstance(_instance, nullptr);
     glfwDestroyWindow(_wnd);
     glfwTerminate();
@@ -99,6 +102,17 @@ class TriangleApp {
     // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
   }
 
+  std::vector<const char*> GetRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    if (enableValidationLayers) {
+      extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+    return extensions;
+  }
+
   bool CheckValidationLayerSupport() {
     uint32_t layerCount = 0;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -134,17 +148,31 @@ class TriangleApp {
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = DebugCallback;
     createInfo.pUserData = VK_NULL_HANDLE;
+
+    if (CreateDebugUtilsMessengerEXT(_instance, &createInfo, nullptr, &_debugMessenger) != VK_SUCCESS) {
+      throw std::runtime_error("failed to set up debug messenger!");
+    }
   }
 
-  std::vector<const char*> GetRequiredExtensions() {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-    if (enableValidationLayers) {
-      extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+                                        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                        const VkAllocationCallbacks* pAllocator,
+                                        VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+      return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } else {
+      return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
-    return extensions;
+  }
+
+  void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                     VkDebugUtilsMessengerEXT debugMessenger,
+                                     const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMssengerEXT");
+    if (func != nullptr) {
+      func(instance, debugMessenger, pAllocator);
+    }
   }
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageServerity,
