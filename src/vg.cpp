@@ -49,6 +49,7 @@ class TriangleApp {
   void InitVulkan() {
     CreateInstance();
     SetupDebugMessenger();
+    PickPhysicalDevice();
   }
 
   void Loop() {
@@ -104,6 +105,37 @@ class TriangleApp {
     // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     // std::vector<VkExtengsionProperties> extensions(extensionCount);
     // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+  }
+
+  void PickPhysicalDevice() {
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
+    std::cout << "Device count: " << deviceCount << std::endl;
+    if (deviceCount == 0) {
+      throw std::runtime_error("failed to find GPUs with vulkan support!");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
+    for (const auto& device : devices) {
+      if (IsDeviceSuitable(device)) {
+        physicalDevice = device;
+        break;
+      }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE) {
+      throw std::runtime_error("failed to find a suitable GPU!");
+    }
+
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    std::cout << "Device name: " << deviceProperties.deviceName << std::endl;
+  }
+
+  bool IsDeviceSuitable(VkPhysicalDevice device) {
+    return true;
   }
 
   std::vector<const char*> GetRequiredExtensions() {
