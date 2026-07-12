@@ -85,7 +85,16 @@ class TriangleApp {
     std::vector<const char*> glfwExtensions = GetRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(glfwExtensions.size());
     createInfo.ppEnabledExtensionNames = glfwExtensions.data();
-    createInfo.pNext = nullptr;
+    if (enableValidationLayers) {
+      createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+      createInfo.ppEnabledLayerNames = validationLayers.data();
+      VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+      PopulateDebugMessengerCreateInfo(debugCreateInfo);
+      createInfo.pNext = &debugCreateInfo;
+    } else {
+      createInfo.enabledLayerCount = 0;
+      createInfo.pNext = nullptr;
+    }
 
     if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
       throw std::runtime_error("failed to create instance!");
