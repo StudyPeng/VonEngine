@@ -1,5 +1,4 @@
-﻿#include <cstddef>
-#include <cstdint>
+﻿#include <cstdint>
 #include <cstring>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -7,6 +6,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <map>
+#include <optional>
 
 inline constexpr uint32_t kWidth = 800, k_height = 600;
 inline constexpr const char* kAppName = "Von Engine";
@@ -19,7 +20,7 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-class TriangleApp {
+class VEngine {
  public:
   void run() {
     InitWindow();
@@ -129,13 +130,41 @@ class TriangleApp {
       throw std::runtime_error("failed to find a suitable GPU!");
     }
 
+    std::multimap<int, VkPhysicalDevice> candidates;
+    for (const auto& device : devices) {
+      int score = RateDeviceSuitability(device);
+      candidates.emplace(score, device);
+    }
+
+    if (candidates.rbegin()->first > 0) {
+      physicalDevice = candidates.rbegin()->second;
+    } else {
+      throw std::runtime_error("failed to find a runtime GPU!");
+    }
+  }
+
+  int RateDeviceSuitability(VkPhysicalDevice device) {
+    int score = 0;
     VkPhysicalDeviceProperties deviceProperties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    std::cout << "Device name: " << deviceProperties.deviceName << std::endl;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+      score += 1000;
+    }
+    score += deviceProperties.limits.maxImageDimension2D;
+    if (!deviceFeatures.geometryShader) {
+      return 0;
+    }
+    return score;
   }
 
   bool IsDeviceSuitable(VkPhysicalDevice device) {
-    return true;
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader;
   }
 
   std::vector<const char*> GetRequiredExtensions() {
@@ -220,7 +249,7 @@ class TriangleApp {
 };
 
 int main() {
-  TriangleApp app;
+  VEngine app;
   try {
     app.run();
   } catch (const std::exception& e) {
