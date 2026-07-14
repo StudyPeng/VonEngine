@@ -14,6 +14,14 @@ inline constexpr const char* kAppName = "Von Engine";
 inline constexpr const char* kEngineName = "Von";
 inline const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
+struct QueueFamilyIndices {
+  std::optional<uint32_t> graphicsFamily;
+
+  bool isCompelete() {
+    return graphicsFamily.has_value();
+  }
+};
+
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -101,11 +109,6 @@ class VEngine {
     if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
       throw std::runtime_error("failed to create instance!");
     }
-
-    // uint32_t extensionCount = 0;
-    // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-    // std::vector<VkExtengsionProperties> extensions(extensionCount);
-    // vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
   }
 
   void PickPhysicalDevice() {
@@ -160,11 +163,27 @@ class VEngine {
   }
 
   bool IsDeviceSuitable(VkPhysicalDevice device) {
-    VkPhysicalDeviceProperties deviceProperties;
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader;
+    QueueFamilyIndices indices = FindQueueFamilies(device);
+    return indices.isCompelete();
+  }
+
+  QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        indices.graphicsFamily = i;
+      }
+      if (indices.isCompelete()) {
+        break;
+      }
+      i++;
+    }
+    return indices;
   }
 
   std::vector<const char*> GetRequiredExtensions() {
