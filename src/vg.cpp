@@ -28,7 +28,7 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-class VEngine {
+class EngineApp {
    public:
     void run() {
         InitWindow();
@@ -341,7 +341,7 @@ class VEngine {
 };
 
 int main() {
-    VEngine app;
+    EngineApp app;
     try {
         app.run();
     } catch (const std::exception& e) {
