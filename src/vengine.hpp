@@ -4,7 +4,8 @@
 class VEngine {
    public:
     void Run();
-    void Init();
+    void InitWindow();
+    void InitVulkan();
     void Loop();
     void Close();
 

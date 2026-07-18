@@ -7,12 +7,12 @@ inline constexpr const char* kWindowName = "Von Engine";
 inline constexpr const char* kEngineName = "Von";
 
 void VEngine::Run() {
-    Init();
+    InitWindow();
     Loop();
     Close();
 }
 
-void VEngine::Init() {
+void VEngine::InitWindow() {
     if (!glfwInit()) {
         throw std::runtime_error("failed to init GLFW!");
     }
