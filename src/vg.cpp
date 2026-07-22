@@ -38,12 +38,13 @@ class EngineApp {
     }
 
    private:
-    GLFWwindow* _wnd = nullptr;
+    GLFWwindow* p_Wnd = nullptr;
     VkInstance _instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT _debugMessenger = VK_NULL_HANDLE;
-    VkPhysicalDevice _physicalDevice;
-    VkDevice _device;
-    VkQueue _graphicsQueue;
+    VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
+    VkDevice _device = VK_NULL_HANDLE;
+    VkQueue _graphicsQueue = VK_NULL_HANDLE;
+    VkSurfaceKHR _surface = VK_NULL_HANDLE;
 
     void InitWindow() {
         if (!glfwInit()) {
@@ -51,8 +52,8 @@ class EngineApp {
         }
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        _wnd = glfwCreateWindow(kWidth, k_height, kAppName, nullptr, nullptr);
-        if (!_wnd) {
+        p_Wnd = glfwCreateWindow(kWidth, k_height, kAppName, nullptr, nullptr);
+        if (!p_Wnd) {
             glfwTerminate();
             throw std::runtime_error("failed to create window");
         }
@@ -61,12 +62,13 @@ class EngineApp {
     void InitVulkan() {
         CreateInstance();
         SetupDebugMessenger();
+        CreateSurface();
         PickPhysicalDevice();
         CreateLogicDevice();
     }
 
     void Loop() {
-        while (!glfwWindowShouldClose(_wnd)) {
+        while (!glfwWindowShouldClose(p_Wnd)) {
             glfwPollEvents();
         }
     }
@@ -77,7 +79,7 @@ class EngineApp {
         }
         vkDestroyDevice(_device, nullptr);
         vkDestroyInstance(_instance, nullptr);
-        glfwDestroyWindow(_wnd);
+        glfwDestroyWindow(p_Wnd);
         glfwTerminate();
     }
 
@@ -207,42 +209,6 @@ class EngineApp {
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
         int i = 0;
-#pragma region Debug Log
-        for (const auto& queueFamily : queueFamilies) {
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Graphics" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Compute" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Transfer" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Binding" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_PROTECTED_BIT) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Protected" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Video decode khr" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Video encode khr" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_OPTICAL_FLOW_BIT_NV) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Flow" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_DATA_GRAPH_BIT_ARM) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Data graph arm" << std::endl;
-            } else if (queueFamily.queueFlags & VK_QUEUE_FLAG_BITS_MAX_ENUM) {
-                std::cout << "QFamily: " << queueFamily.queueFlags << "(" << queueFamily.queueCount
-                          << ") " << "Flag Max" << std::endl;
-            }
-        }
-
-#pragma endregion
         for (const auto& queueFamily : queueFamilies) {
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
@@ -336,6 +302,12 @@ class EngineApp {
         if (CreateDebugUtilsMessengerEXT(_instance, &createInfo, nullptr, &_debugMessenger) !=
             VK_SUCCESS) {
             throw std::runtime_error("failed to set up debug messenger!");
+        }
+    }
+
+    void CreateSurface() {
+        if (glfwCreateWindowSurface(_instance, p_Wnd, nullptr, &_surface) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create window surface!");
         }
     }
 };

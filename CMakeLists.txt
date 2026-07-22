@@ -43,10 +43,10 @@ FetchContent_MakeAvailable(glm)
 find_package(Vulkan REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
 
-add_executable(${PROJECT_NAME} src/main.cpp
-  src/vengine.cpp)
+# add_executable(${PROJECT_NAME} src/main.cpp
+#   src/vengine.cpp)
 
-# add_executeable(${PROJECT_NAME} src/vg.cpp)
+add_executable(${PROJECT_NAME} src/vg.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
